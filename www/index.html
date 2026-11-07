@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#19130f">
+<title>J-Rock progression maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>J-Rock progression maker</h1>
+  <div class="sub">Build a progression on the flow wheel, hear it, and see how to play it.</div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <label class="sm">Key <select id="key"></select></label>
+        <label class="sm">BPM <input type="range" id="bpm" min="60" max="220" value="120"><span id="bpmv">120</span></label>
+      </div>
+      <div class="row">
+        <button id="play" class="primary">▶ Play</button>
+        <button id="loop" class="on">Loop</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="sm">Time <select id="timeSig"></select></label>
+      <label class="sm">Drums <select id="drumStyle"></select></label>
+      <label class="sm">Instrument <select id="instrument"></select></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <h2 style="margin:0">Your progression</h2>
+      <div class="tabs" id="diagModeBtns" style="margin:0">
+        <button data-m="guitar">Guitar</button><button data-m="piano">Piano</button>
+      </div>
+      <div class="sizeBtns" id="sizeBtns">
+        <button data-s="sm">S</button><button data-s="md">M</button><button data-s="lg">L</button>
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <button id="copy">Copy</button><button id="undo">Undo</button>
+      <button id="downloadChart">Download chart</button><button id="downloadAudio">Download audio</button>
+      <button id="clear" class="danger">Clear</button>
+    </div>
+    <div class="prog" id="prog"></div>
+    <div style="margin-top:10px"><div class="sub" style="margin:0 0 6px">Presets from the cheat sheet</div><div class="presets" id="presets"></div></div>
+  </div>
+
+  <div class="card" id="selCard" style="display:none">
+    <h2 id="selTitle">Selected chord</h2>
+    <div class="bigDiagram" id="bigDiagram"></div>
+    <div class="sub" id="varsLbl" style="margin:0">Voicing (tap to see how it's fretted)</div>
+    <div class="vars" id="vars"></div>
+    <div id="swapsWrap">
+      <div class="sub" style="margin:0 0 6px">Swap within its family (same job, new colour)</div>
+      <div id="swaps"></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button id="mvL">◀ Move</button><button id="mvR">Move ▶</button><button id="del">Remove</button><button id="desel">Done</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Flow wheel</h2>
+    <div class="sub" id="fromLbl" style="margin-top:-4px"></div>
+    <svg class="wheel" id="wheel" viewBox="0 0 340 340"></svg>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--T)"></i>Tonic (rest)</span>
+      <span><i class="dot" style="background:var(--S)"></i>Subdominant (motion)</span>
+      <span><i class="dot" style="background:var(--D)"></i>Dominant (tension)</span>
+    </div>
+    <div class="sugg" id="sugg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Why it works</h2>
+    <svg id="curve" viewBox="0 0 340 130" style="width:100%;display:block;margin-bottom:10px"></svg>
+    <ul class="an" id="an"></ul>
+  </div>
+
+  <div class="card">
+    <details class="sect" open>
+      <summary>Chord explorer — try any chord, anywhere</summary>
+      <div class="explorer">
+        <div class="sub" style="margin:0">Pick two chords and compare how they sound together — great for "what if I swap this G for a G7, Gsus4…"</div>
+        <div class="grid2">
+          <div>
+            <div class="row explorerRow">
+              <select id="expRootA"></select><select id="expQualA"></select>
+            </div>
+            <div class="bigDiagram" id="expDiagA"></div>
+            <div class="row" style="justify-content:center"><button id="expPlayA">▶ Play A</button><button id="expAddA">+ Add to progression</button></div>
+          </div>
+          <div>
+            <div class="row explorerRow">
+              <select id="expRootB"></select><select id="expQualB"></select>
+            </div>
+            <div class="bigDiagram" id="expDiagB"></div>
+            <div class="row" style="justify-content:center"><button id="expPlayB">▶ Play B</button><button id="expAddB">+ Add to progression</button></div>
+          </div>
+        </div>
+        <div class="row" style="justify-content:center"><button id="expPlayBoth" class="primary">▶ Play A → B</button></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details class="sect">
+      <summary>Saved progressions</summary>
+      <div class="row" style="margin-bottom:10px">
+        <input type="text" id="saveName" placeholder="Name this progression…" style="flex:1;min-width:140px">
+        <button id="saveBtn" class="primary">Save current</button>
+      </div>
+      <div class="saved" id="savedList"></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details class="sect">
+      <summary>Listen — detect what you're playing or singing</summary>
+      <div class="micPanel">
+        <div class="tabs" id="micMode">
+          <button data-m="chord" class="on">Guitar chord</button>
+          <button data-m="note">Sung note</button>
+        </div>
+        <div class="micReadout" id="micReadout">—</div>
+        <div class="micSub" id="micSub">Tap start and allow microphone access.</div>
+        <button id="micToggle" class="primary">🎤 Start listening</button>
+        <div class="micSub">Experimental: works best in a quiet room, close to the mic. Guitar detection guesses the closest chord from pitch content, not a verified transcription.</div>
+      </div>
+    </details>
+  </div>
+
+  <div class="card">
+    <details class="sect">
+      <summary>Studies — Kessoku Band progressions</summary>
+      <div class="sub" style="margin-top:0">Real chord progressions from 結束バンド (Kessoku Band, <em>Bocchi the Rock!</em>) songs, sourced from their published chord charts and converted to roman-numeral analysis. Loading one replaces your current progression.</div>
+      <div id="songsList"></div>
+    </details>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="chords.js"></script>
+<script src="audio.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
