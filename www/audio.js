@@ -105,9 +105,19 @@ const AudioEngine=(()=>{
 
   function voicingNotes(iv,rootPc){let root=48+(((rootPc%12)+12)%12);if(root>53)root-=12;return iv.map(i=>root+i+12)}
 
-  let timers=[],playing=false,playHandlers={};
+  let timers=[],playing=false,playHandlers={},sessionGain=null;
   function stop(){
     playing=false;timers.forEach(clearTimeout);timers=[];
+    if(sessionGain){
+      try{
+        const c=ctx(),now=c.currentTime,g=sessionGain;
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(g.gain.value,now);
+        g.gain.linearRampToValueAtTime(0,now+.03);
+        setTimeout(()=>{try{g.disconnect()}catch(e){}},80);
+      }catch(e){}
+      sessionGain=null;
+    }
     if(playHandlers.onStop)playHandlers.onStop();
   }
   function isPlaying(){return playing}
@@ -123,7 +133,9 @@ const AudioEngine=(()=>{
 
   function playProgression(chords,opts){
     stop();
-    const c=ctx(),out=getMaster();
+    const c=ctx(),master=getMaster();
+    const out=c.createGain();out.gain.value=1;out.connect(master);
+    sessionGain=out;
     playing=true;playHandlers=opts;
     const beat=60/opts.bpm,n=opts.timeSigBeats||4,bar=beat*n;
     const strumPat=buildStrumPattern(n),drums=buildDrumPattern(opts.drumStyle||"none",n);

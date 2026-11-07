@@ -9,7 +9,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Lexend,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
-.wrap{max-width:760px;margin:0 auto;padding:16px 14px 60px}
+.wrap{max-width:760px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 14px 60px}
 h1{font-size:22px;margin:4px 0 2px;letter-spacing:.5px}
 h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:1px}
 .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
@@ -24,7 +24,7 @@ button.ghost{background:transparent}
 label.sm{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
 input[type=range]{accent-color:var(--primaryLine);width:110px;padding:0;background:transparent;border:none}
 input[type=text],input[type=number]{padding:7px 10px}
-.prog{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start;min-height:70px}
+.prog{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-start;min-height:70px;padding-top:10px}
 .chip{position:relative;min-width:72px;padding:8px 6px 6px;border-radius:12px;border:2px solid;text-align:center;cursor:pointer;background:var(--card2)}
 .chip .rn{font-weight:700;font-size:17px;line-height:1.1}
 .chip .cn{font-size:12px;color:var(--muted)}
@@ -33,6 +33,10 @@ input[type=text],input[type=number]{padding:7px 10px}
 .chip.play{background:#fff;color:#1d1736}
 .chip.play .cn{color:#1d1736}
 .chip.play .diagram{color:#1d1736}
+.chipBtns{position:absolute;top:-8px;right:-6px;display:flex;gap:3px;z-index:2}
+.chipBtn{width:20px;height:20px;padding:0;border-radius:999px;font-size:10px;line-height:1;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.chipBtn:hover{background:var(--primary);color:#19130f;border-color:var(--primaryLine)}
+.chipBtn[data-act="del"]:hover{background:var(--danger);border-color:var(--danger)}
 .fT{border-color:var(--T);color:var(--T)} .fS{border-color:var(--S);color:var(--S)} .fD{border-color:var(--D);color:var(--D)} .fX{border-color:var(--muted);color:var(--muted)}
 .mv{font-size:11px;padding:2px 6px;border-radius:999px;border:1px solid;white-space:nowrap}
 .empty{color:var(--muted);font-size:14px}

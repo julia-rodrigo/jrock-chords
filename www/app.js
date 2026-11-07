@@ -75,7 +75,9 @@ function renderProg(){
   st.prog.forEach((c,i)=>{
     if(i>0){const t=TYPES[moveBetween(st.prog[i-1],c)[0]];h+=`<span class="mv" style="color:${t.c};border-color:${t.c}">${t.lbl}</span>`}
     const diagram=chordOrPianoSVG(st.diagramMode,chordRoot(c),chordShapeKey(c),chordIv(c),chordFamHexOf(c),sz.w,sz.h);
-    h+=`<div class="chip ${chordFamCls(c)} ${st.sel===i?"sel":""}" data-i="${i}"><div class="rn">${chordTop(c)}</div><div class="cn">${chordBottom(c)}</div><div class="diagram">${diagram}</div></div>`;
+    h+=`<div class="chip ${chordFamCls(c)} ${st.sel===i?"sel":""}" data-i="${i}">`+
+       `<div class="chipBtns"><button class="chipBtn" data-act="play" data-i="${i}" title="Replay this chord">▶</button><button class="chipBtn" data-act="del" data-i="${i}" title="Remove this chord">✕</button></div>`+
+       `<div class="rn">${chordTop(c)}</div><div class="cn">${chordBottom(c)}</div><div class="diagram">${diagram}</div></div>`;
   });
   el.innerHTML=h;
 }
@@ -222,7 +224,16 @@ $("play").onclick=()=>AudioEngine.isPlaying()?stopPlay():play();
 /* ---------- wiring: wheel / selection / editing ---------- */
 $("wheel").addEventListener("click",e=>{const g=e.target.closest(".node");if(g)addChord(+g.dataset.d)});
 $("sugg").addEventListener("click",e=>{const b=e.target.closest(".sg");if(b)addChord(+b.dataset.d)});
-$("prog").addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;const i=+c.dataset.i;st.sel=st.sel===i?null:i;render();if(st.sel!=null)previewChord(st.prog[i])});
+$("prog").addEventListener("click",e=>{
+  const b=e.target.closest(".chipBtn");
+  if(b){
+    const i=+b.dataset.i;
+    if(b.dataset.act==="play")previewChord(st.prog[i]);
+    else{snap();st.prog.splice(i,1);if(st.sel===i)st.sel=null;else if(st.sel>i)st.sel--;render()}
+    return;
+  }
+  const c=e.target.closest(".chip");if(!c)return;const i=+c.dataset.i;st.sel=st.sel===i?null:i;render();if(st.sel!=null)previewChord(st.prog[i]);
+});
 $("vars").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;snap();
   const c=st.prog[st.sel];

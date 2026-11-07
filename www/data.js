@@ -121,6 +121,12 @@ const KESSOKU_SONGS=[
   p:[{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:1,v:0},{d:4,v:0},{d:0,v:0}]},
  {n:"Seishun Complex",jp:"青春コンプレックス",key:"C",
   d:"intro — Imaj7, then a borrowed ♭VIImaj7 (not in the diatonic set — shown as a custom chord), IVmaj7, a III7 secondary dominant, VIm9, back to IVmaj7.",
-  p:[{d:0,v:1},{custom:true,root:10,q:"maj7"},{d:3,v:1},{d:2,v:2},{d:5,v:3},{d:3,v:1}]}
+  p:[{d:0,v:1},{custom:true,root:10,q:"maj7"},{d:3,v:1},{d:2,v:2},{d:5,v:3},{d:3,v:1}]},
+ {n:"Guitar, Solitude, and a Blue Planet",jp:"ギターと孤独と蒼い惑星",key:"G",
+  d:"intro/verse loop — VIm-V-I-V, repeating, then a turn through IV-V back to VIm; a driving, anthemic opener (played at capo 2 in the original chart; shown here as sounded).",
+  p:[{d:5,v:0},{d:4,v:0},{d:0,v:0},{d:4,v:0},{d:3,v:0},{d:4,v:0},{d:5,v:0}]},
+ {n:"That Band",jp:"あのバンド",key:"C",
+  d:"verse — VIm7-IVmaj7-IIm7-V, a classic Royal-Road-family loop; then the pre-chorus turn VIm7-IVmaj7-IIIm7 into a borrowed ♭VII (B♭, not diatonic — shown as a custom chord), a dramatic colour chord before resolving home.",
+  p:[{d:5,v:1},{d:3,v:1},{d:1,v:1},{d:4,v:0},{d:5,v:1},{d:3,v:1},{d:2,v:1},{custom:true,root:10,q:""}]}
 ];
 
