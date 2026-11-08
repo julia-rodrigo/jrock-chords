@@ -59,6 +59,21 @@ const AudioEngine=(()=>{
     o.connect(f);o2.connect(f);f.connect(g);g.connect(dest);
     o.start(t);o2.start(t);o.stop(t+len+.1);o2.stop(t+len+.1);
   }
+  function leadNote(c,out,m,t,vel,len,panV=0){
+    const dest=pan(c,out,panV);
+    const o=c.createOscillator(),o2=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();
+    o.type="sine";o2.type="triangle";
+    const freq=hz(m);o.frequency.setValueAtTime(freq,t);o2.frequency.setValueAtTime(freq,t);
+    const lfo=c.createOscillator(),lfoGain=c.createGain();
+    lfo.type="sine";lfo.frequency.value=5.5;lfoGain.gain.value=freq*.012;
+    lfo.connect(lfoGain);lfoGain.connect(o.frequency);lfoGain.connect(o2.frequency);
+    f.type="lowpass";f.frequency.setValueAtTime(2400,t);f.frequency.exponentialRampToValueAtTime(1100,t+len);
+    const og2=c.createGain();og2.gain.value=.3;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vel,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+len);
+    o.connect(f);o2.connect(og2);og2.connect(f);f.connect(g);g.connect(dest);
+    lfo.start(t);o.start(t);o2.start(t);
+    lfo.stop(t+len+.08);o.stop(t+len+.08);o2.stop(t+len+.08);
+  }
   function bassNote(c,out,m,t,len,panV=0){
     const dest=pan(c,out,panV);
     const o=c.createOscillator(),g=c.createGain();o.type="triangle";o.frequency.value=hz(m);
@@ -148,6 +163,7 @@ const AudioEngine=(()=>{
         drums.kick.forEach(b=>drumHit(c,out,"kick",t0+b*beat));
         drums.snare.forEach(b=>drumHit(c,out,"snare",t0+b*beat));
         drums.hihat.forEach(b=>drumHit(c,out,"hihat",t0+b*beat));
+        if(opts.melody&&opts.melody[i])opts.melody[i].forEach(nt=>{if(nt.b<n)leadNote(c,out,nt.midi,t0+nt.b*beat,nt.vel||.5,nt.len*beat,0)});
         timers.push(setTimeout(()=>{if(playing&&opts.onBeat)opts.onBeat(i)},Math.max(0,(t0-c.currentTime)*1000)));
       });
       const end=start+chords.length*bar;

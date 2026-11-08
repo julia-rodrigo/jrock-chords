@@ -214,6 +214,7 @@ function playOpts(extra){
 function highlight(i){document.querySelectorAll(".chip").forEach(el=>el.classList.toggle("play",+el.dataset.i===i))}
 function play(){
   if(!st.prog.length)return;
+  if(playingSongIdx!==-1){playingSongIdx=-1;renderSongs()}
   const chords=st.prog.map(toPlayable);
   $("play").textContent="■ Stop";
   AudioEngine.playProgression(chords,playOpts({onBeat:highlight,onDone:()=>{$("play").textContent="▶ Play";highlight(-1)}}));
@@ -350,21 +351,45 @@ $("savedList").addEventListener("click",e=>{
 });
 
 /* ---------- studies: Kessoku Band ---------- */
+function songChordRoot(song,c){return c.custom?((c.root%12)+12)%12:(KEYPC[song.key]+DEG[c.d].off)%12}
+function songChordIv(c){return c.custom?qualByKey(c.q).iv:VARS[c.d][c.v].iv}
+function songToPlayable(song,c){return{iv:songChordIv(c),root:songChordRoot(song,c)}}
+function songMelodyAbs(song){
+  if(!song.melody)return null;
+  const base=60+KEYPC[song.key];
+  return song.melody.map(bar=>bar.map(nt=>({b:nt.b,midi:base+nt.m,len:nt.len,vel:nt.vel})));
+}
+let melodyOn=true,playingSongIdx=-1;
 function renderSongs(){
   $("songsList").innerHTML=KESSOKU_SONGS.map((song,i)=>`
     <div class="songCard">
       <div class="t">${song.n}</div>
       <div class="jp">${song.jp} · key of ${song.key}</div>
       <div class="d">${song.d}</div>
-      <button data-i="${i}" class="primary">Load into builder</button>
+      <div class="row">
+        <button data-i="${i}" data-act="play" class="${playingSongIdx===i?"on":""}">${playingSongIdx===i?"■ Stop":"▶ Play"}</button>
+        <button data-i="${i}" data-act="load" class="primary">Load into builder</button>
+      </div>
     </div>`).join("");
 }
 $("songsList").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
-  const song=KESSOKU_SONGS[+b.dataset.i];snap();
+  const i=+b.dataset.i,song=KESSOKU_SONGS[i];
+  if(b.dataset.act==="play"){
+    if(playingSongIdx===i){AudioEngine.stop();playingSongIdx=-1;renderSongs();return}
+    stopPlay();
+    const chords=song.p.map(c=>songToPlayable(song,c));
+    const melody=melodyOn?songMelodyAbs(song):null;
+    playingSongIdx=i;renderSongs();
+    AudioEngine.playProgression(chords,{bpm:st.bpm,timeSigBeats:4,drumStyle:st.drumStyle,instrument:st.instrument,loop:false,melody,
+      onDone:()=>{playingSongIdx=-1;renderSongs()}});
+    return;
+  }
+  snap();
   st.key=song.key;st.prog=song.p.map(c=>c.custom?{...c}:{d:c.d,v:c.v});st.sel=null;
   renderKey();render();toast(`Loaded "${song.n}"`);
 });
+$("melodyToggle").onclick=e=>{melodyOn=!melodyOn;e.currentTarget.classList.toggle("on",melodyOn);e.currentTarget.textContent=melodyOn?"🎵 Melody: on":"🎵 Melody: off"};
 
 /* ---------- mic: listen & detect ---------- */
 let micOn=false,micMode="chord";

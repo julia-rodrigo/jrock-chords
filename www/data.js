@@ -109,24 +109,84 @@ function buildDrumPattern(style,n){
    sourced from their published chord charts on U-FRET (chord names/roman-numeral analysis only —
    no lyrics or tab). d/v pairs are the same {degree,variant} shape as PRESETS; one entry below also
    shows how a borrowed (non-diatonic) chord is represented with {custom:true,root,q}. ---------- */
+/* melody notes are ORIGINAL, representative melodic contours built from each bar's chord
+   tones (plus the occasional passing tone) to outline the song's harmonic shape — not
+   note-for-note transcriptions of the real recorded vocal line (no verified score source
+   was available). {b: beat offset in the bar, m: semitone offset from the song's key tonic
+   at a vocal-range register, len: duration in beats, vel: 0-1 velocity}. */
 const KESSOKU_SONGS=[
  {n:"A Rolling Stone, Morning Falls on You",jp:"転がる岩、君に朝が降る",key:"C",
   d:"verse loop — a Royal-Road-adjacent I-VIm-IV-I / I-VIm-IV-V turn.",
-  p:[{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:0,v:0},{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:4,v:0}]},
+  p:[{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:0,v:0},{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:4,v:0}],
+  melody:[
+   [{b:0,m:7,len:2,vel:.5},{b:2,m:4,len:2,vel:.45}],
+   [{b:0,m:4,len:2,vel:.5},{b:2,m:9,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:12,len:2,vel:.45}],
+   [{b:0,m:12,len:2,vel:.5},{b:2,m:7,len:2,vel:.5}],
+   [{b:0,m:4,len:2,vel:.45},{b:2,m:0,len:2,vel:.4}],
+   [{b:0,m:4,len:2,vel:.5},{b:2,m:9,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:12,len:2,vel:.5}],
+   [{b:0,m:11,len:1.5,vel:.55},{b:2,m:7,len:2,vel:.5}]
+  ]},
  {n:"milky way",jp:"milky way",key:"G",
   d:"verse — I-V-I-IIm7, then VIm-V-IVmaj7-I.",
-  p:[{d:0,v:0},{d:4,v:0},{d:0,v:0},{d:1,v:1},{d:5,v:0},{d:4,v:0},{d:3,v:1},{d:0,v:0}]},
+  p:[{d:0,v:0},{d:4,v:0},{d:0,v:0},{d:1,v:1},{d:5,v:0},{d:4,v:0},{d:3,v:1},{d:0,v:0}],
+  melody:[
+   [{b:0,m:0,len:2,vel:.5},{b:2,m:4,len:2,vel:.45}],
+   [{b:0,m:7,len:2,vel:.5},{b:2,m:11,len:2,vel:.45}],
+   [{b:0,m:12,len:2,vel:.5},{b:2,m:7,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:5,len:2,vel:.45}],
+   [{b:0,m:4,len:2,vel:.5},{b:2,m:9,len:2,vel:.45}],
+   [{b:0,m:11,len:2,vel:.5},{b:2,m:7,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:5,len:2,vel:.45}],
+   [{b:0,m:4,len:1.5,vel:.5},{b:2,m:0,len:2,vel:.45}]
+  ]},
  {n:"Small Sea",jp:"小さな海",key:"C",
   d:"verse — I-VIm-IV-IIm-V-I, a gentle descending-then-rising turn.",
-  p:[{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:1,v:0},{d:4,v:0},{d:0,v:0}]},
+  p:[{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:1,v:0},{d:4,v:0},{d:0,v:0}],
+  melody:[
+   [{b:0,m:7,len:2,vel:.5},{b:2,m:4,len:2,vel:.45}],
+   [{b:0,m:4,len:2,vel:.5},{b:2,m:9,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:12,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.45},{b:2,m:5,len:2,vel:.4}],
+   [{b:0,m:7,len:2,vel:.5},{b:2,m:11,len:2,vel:.45}],
+   [{b:0,m:12,len:1.5,vel:.5},{b:2,m:7,len:2,vel:.45}]
+  ]},
  {n:"Seishun Complex",jp:"青春コンプレックス",key:"C",
   d:"intro — Imaj7, then a borrowed ♭VIImaj7 (not in the diatonic set — shown as a custom chord), IVmaj7, a III7 secondary dominant, VIm9, back to IVmaj7.",
-  p:[{d:0,v:1},{custom:true,root:10,q:"maj7"},{d:3,v:1},{d:2,v:2},{d:5,v:3},{d:3,v:1}]},
+  p:[{d:0,v:1},{custom:true,root:10,q:"maj7"},{d:3,v:1},{d:2,v:2},{d:5,v:3},{d:3,v:1}],
+  melody:[
+   [{b:0,m:7,len:4,vel:.45}],
+   [{b:0,m:10,len:4,vel:.5}],
+   [{b:0,m:9,len:4,vel:.45}],
+   [{b:0,m:4,len:2,vel:.5},{b:2,m:11,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:19,len:2,vel:.4}],
+   [{b:0,m:12,len:1.5,vel:.5},{b:2,m:9,len:2,vel:.45}]
+  ]},
  {n:"Guitar, Solitude, and a Blue Planet",jp:"ギターと孤独と蒼い惑星",key:"G",
   d:"intro/verse loop — VIm-V-I-V, repeating, then a turn through IV-V back to VIm; a driving, anthemic opener (played at capo 2 in the original chart; shown here as sounded).",
-  p:[{d:5,v:0},{d:4,v:0},{d:0,v:0},{d:4,v:0},{d:3,v:0},{d:4,v:0},{d:5,v:0}]},
+  p:[{d:5,v:0},{d:4,v:0},{d:0,v:0},{d:4,v:0},{d:3,v:0},{d:4,v:0},{d:5,v:0}],
+  melody:[
+   [{b:0,m:9,len:2,vel:.55},{b:2,m:12,len:2,vel:.5}],
+   [{b:0,m:11,len:2,vel:.55},{b:2,m:7,len:2,vel:.5}],
+   [{b:0,m:12,len:2,vel:.55},{b:2,m:7,len:2,vel:.5}],
+   [{b:0,m:11,len:2,vel:.55},{b:2,m:14,len:2,vel:.5}],
+   [{b:0,m:9,len:2,vel:.55},{b:2,m:12,len:2,vel:.5}],
+   [{b:0,m:11,len:2,vel:.55},{b:2,m:7,len:2,vel:.5}],
+   [{b:0,m:9,len:1.5,vel:.55},{b:2,m:4,len:2,vel:.5}]
+  ]},
  {n:"That Band",jp:"あのバンド",key:"C",
   d:"verse — VIm7-IVmaj7-IIm7-V, a classic Royal-Road-family loop; then the pre-chorus turn VIm7-IVmaj7-IIIm7 into a borrowed ♭VII (B♭, not diatonic — shown as a custom chord), a dramatic colour chord before resolving home.",
-  p:[{d:5,v:1},{d:3,v:1},{d:1,v:1},{d:4,v:0},{d:5,v:1},{d:3,v:1},{d:2,v:1},{custom:true,root:10,q:""}]}
+  p:[{d:5,v:1},{d:3,v:1},{d:1,v:1},{d:4,v:0},{d:5,v:1},{d:3,v:1},{d:2,v:1},{custom:true,root:10,q:""}],
+  melody:[
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:12,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:5,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.45},{b:2,m:5,len:2,vel:.4}],
+   [{b:0,m:7,len:2,vel:.5},{b:2,m:11,len:2,vel:.45}],
+   [{b:0,m:12,len:2,vel:.5},{b:2,m:9,len:2,vel:.45}],
+   [{b:0,m:9,len:2,vel:.5},{b:2,m:12,len:2,vel:.45}],
+   [{b:0,m:11,len:2,vel:.5},{b:2,m:7,len:2,vel:.45}],
+   [{b:0,m:14,len:1.5,vel:.55},{b:2,m:10,len:2,vel:.5}]
+  ]}
 ];
 
