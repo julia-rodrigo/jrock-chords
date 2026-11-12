@@ -80,6 +80,9 @@ details.sect>summary{cursor:pointer;color:var(--muted);font-size:13px;text-trans
 .songCard .t{font-weight:600}
 .songCard .jp{color:var(--muted);font-size:12px}
 .songCard .d{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.sections{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.secTag{font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--card)}
+.secTag em{font-style:normal;opacity:.7}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .tabs button{font-size:13px;padding:7px 12px}
 .tabs button.on{background:var(--primary);border-color:var(--primaryLine);color:#1d1510}

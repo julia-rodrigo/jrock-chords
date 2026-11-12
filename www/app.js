@@ -196,13 +196,13 @@ function render(){
 function addChord(d){
   snap();const c={d,v:0};
   if(st.sel!=null){st.prog.splice(st.sel+1,0,c);st.sel++}else st.prog.push(c);
-  if(st.prog.length>16){st.prog.shift();if(st.sel!=null)st.sel--}
+  if(st.prog.length>32){st.prog.shift();if(st.sel!=null)st.sel--}
   render();previewChord(c);
 }
 function addCustomChord(root,q){
   snap();const c={custom:true,root:((root%12)+12)%12,q};
   if(st.sel!=null){st.prog.splice(st.sel+1,0,c);st.sel++}else st.prog.push(c);
-  if(st.prog.length>16){st.prog.shift();if(st.sel!=null)st.sel--}
+  if(st.prog.length>32){st.prog.shift();if(st.sel!=null)st.sel--}
   render();previewChord(c);
 }
 function previewChord(c){AudioEngine.previewChord(chordIv(c),chordRoot(c),st.instrument)}
@@ -356,7 +356,7 @@ function songChordIv(c){return c.custom?qualByKey(c.q).iv:VARS[c.d][c.v].iv}
 function songToPlayable(song,c){return{iv:songChordIv(c),root:songChordRoot(song,c)}}
 function songMelodyAbs(song){
   if(!song.melody)return null;
-  const base=60+KEYPC[song.key];
+  const base=72+KEYPC[song.key]; // lead register, clearly above the ~C4-D5 chord voicing
   return song.melody.map(bar=>bar.map(nt=>({b:nt.b,midi:base+nt.m,len:nt.len,vel:nt.vel})));
 }
 let melodyOn=true,playingSongIdx=-1;
@@ -366,6 +366,7 @@ function renderSongs(){
       <div class="t">${song.n}</div>
       <div class="jp">${song.jp} · key of ${song.key}</div>
       <div class="d">${song.d}</div>
+      ${song.sections?`<div class="sections">${song.sections.map(([name,len])=>`<span class="secTag">${name} <em>${len}</em></span>`).join("")}</div>`:""}
       <div class="row">
         <button data-i="${i}" data-act="play" class="${playingSongIdx===i?"on":""}">${playingSongIdx===i?"■ Stop":"▶ Play"}</button>
         <button data-i="${i}" data-act="load" class="primary">Load into builder</button>
