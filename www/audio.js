@@ -1,9 +1,20 @@
 /* ---------- audio engine: instruments, drums, scheduling, mic pitch/chord detection, WAV export ---------- */
 const AudioEngine=(()=>{
   let ac=null,master=null,dry=null,wet=null,delay=null,fb=null,comp=null,micStream=null,micAC=null,micAnalyser=null,micRaf=null;
+  let stateListeners=[];
+  function emitState(s){stateListeners.forEach(fn=>{try{fn(s)}catch(e){}})}
+  function onAudioState(fn){stateListeners.push(fn);emitState(ac?ac.state:"not-created")}
   function ctx(){
-    if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)()}
-    if(ac.state==="suspended")ac.resume();
+    if(!ac){
+      try{
+        ac=new (window.AudioContext||window.webkitAudioContext)();
+        ac.addEventListener("statechange",()=>emitState(ac.state));
+        emitState(ac.state);
+      }catch(e){emitState("error: "+e.message);throw e}
+    }
+    if(ac.state==="suspended"){
+      ac.resume().then(()=>emitState(ac.state)).catch(e=>emitState("resume failed: "+e.message));
+    }
     return ac;
   }
   function buildMaster(c,out){
@@ -143,7 +154,7 @@ const AudioEngine=(()=>{
       const t=c.currentTime+.02,notes=voicingNotes(iv,rootPc);
       strum(c,out,notes,t,false,.5,1.4,instrument);
       bassNote(c,out,notes[0]-12,t,1.2);
-    }catch(e){}
+    }catch(e){emitState("error: "+e.message)}
   }
 
   function playProgression(chords,opts){
@@ -307,5 +318,5 @@ const AudioEngine=(()=>{
   }
 
   return{ctx,getMaster,hz,previewChord,playProgression,stop,isPlaying,renderToWavBlob,
-    startMicPitch,startMicChord,stopMic,voicingNotes};
+    startMicPitch,startMicChord,stopMic,voicingNotes,onAudioState};
 })();

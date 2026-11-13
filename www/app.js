@@ -1,5 +1,11 @@
 /* ---------- state ---------- */
 const $=id=>document.getElementById(id);
+if(typeof AudioEngine!=="undefined"&&AudioEngine.onAudioState){
+  AudioEngine.onAudioState(s=>{
+    const el=$("audioStatus");if(!el)return;
+    el.textContent="audio: "+s+(s==="running"?" ✓":s==="suspended"?" (tap again)":"");
+  });
+}
 const BIG_SIZE={sm:{w:92,h:112},md:{w:132,h:160},lg:{w:176,h:214}};
 
 let st={
