@@ -39,7 +39,15 @@ const AudioEngine=(()=>{
     for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
     return buf;
   }
-  function pan(c,out,v){const p=c.createStereoPanner?c.createStereoPanner():null;if(!p){return out}p.pan.value=Math.max(-1,Math.min(1,v));p.connect(out);return p}
+  const panCache=new WeakMap();
+  function pan(c,out,v){
+    if(!c.createStereoPanner)return out;
+    const k=Math.round(Math.max(-1,Math.min(1,v))*4)/4;
+    if(k===0)return out;
+    let m=panCache.get(out);if(!m){m=new Map();panCache.set(out,m)}
+    let p=m.get(k);if(!p){p=c.createStereoPanner();p.pan.value=k;p.connect(out);m.set(k,p)}
+    return p;
+  }
 
   function guitarNote(c,out,m,t,vel,len,panV){
     const dest=pan(c,out,panV);
@@ -131,9 +139,9 @@ const AudioEngine=(()=>{
 
   function voicingNotes(iv,rootPc){let root=48+(((rootPc%12)+12)%12);if(root>53)root-=12;return iv.map(i=>root+i+12)}
 
-  let timers=[],playing=false,playHandlers={},sessionGain=null;
+  let timers=[],ticker=null,playing=false,playHandlers={},sessionGain=null;
   function stop(){
-    playing=false;timers.forEach(clearTimeout);timers=[];
+    playing=false;timers.forEach(clearTimeout);timers=[];if(ticker){clearInterval(ticker);ticker=null}
     if(sessionGain){
       try{
         const c=ctx(),now=c.currentTime,g=sessionGain;
@@ -157,6 +165,9 @@ const AudioEngine=(()=>{
     }catch(e){emitState("error: "+e.message)}
   }
 
+  // Bars are scheduled just in time (a short lookahead) instead of all at once: queuing a whole
+  // song up front creates thousands of live audio nodes, which overloads a phone's audio thread
+  // and makes playback drop to silence.
   function playProgression(chords,opts){
     stop();
     const c=ctx(),master=getMaster();
@@ -165,26 +176,35 @@ const AudioEngine=(()=>{
     playing=true;playHandlers=opts;
     const beat=60/opts.bpm,n=opts.timeSigBeats||4,bar=beat*n;
     const strumPat=buildStrumPattern(n),drums=buildDrumPattern(opts.drumStyle||"none",n);
-    function schedule(start){
-      chords.forEach((ch,i)=>{
-        const t0=start+i*bar,notes=voicingNotes(ch.iv,ch.root);
-        strumPat.forEach(([b,up,v])=>{if(b<n)strum(c,out,notes,t0+b*beat,!!up,v,beat*1.1,opts.instrument)});
-        bassNote(c,out,notes[0]-12,t0,beat*Math.min(2,n));
-        if(n>2)bassNote(c,out,notes[0]-12,t0+Math.floor(n/2)*beat,beat*Math.min(2,n));
-        drums.kick.forEach(b=>drumHit(c,out,"kick",t0+b*beat));
-        drums.snare.forEach(b=>drumHit(c,out,"snare",t0+b*beat));
-        drums.hihat.forEach(b=>drumHit(c,out,"hihat",t0+b*beat));
-        if(opts.melody&&opts.melody[i])opts.melody[i].forEach(nt=>{if(nt.b<n)leadNote(c,out,nt.midi,t0+nt.b*beat,nt.vel||.5,nt.len*beat,0)});
-        timers.push(setTimeout(()=>{if(playing&&opts.onBeat)opts.onBeat(i)},Math.max(0,(t0-c.currentTime)*1000)));
-      });
-      const end=start+chords.length*bar;
-      timers.push(setTimeout(()=>{
-        if(!playing)return;
-        if(opts.loop&&chords.length)schedule(end);
-        else timers.push(setTimeout(()=>{playing=false;if(opts.onDone)opts.onDone()},400));
-      },Math.max(0,(end-c.currentTime-.3)*1000)));
+    function scheduleBar(i,t0){
+      const ch=chords[i],notes=voicingNotes(ch.iv,ch.root);
+      strumPat.forEach(([b,up,v])=>{if(b<n)strum(c,out,notes,t0+b*beat,!!up,v,beat*1.1,opts.instrument)});
+      bassNote(c,out,notes[0]-12,t0,beat*Math.min(2,n));
+      if(n>2)bassNote(c,out,notes[0]-12,t0+Math.floor(n/2)*beat,beat*Math.min(2,n));
+      drums.kick.forEach(b=>drumHit(c,out,"kick",t0+b*beat));
+      drums.snare.forEach(b=>drumHit(c,out,"snare",t0+b*beat));
+      drums.hihat.forEach(b=>drumHit(c,out,"hihat",t0+b*beat));
+      if(opts.melody&&opts.melody[i])opts.melody[i].forEach(nt=>{if(nt.b<n)leadNote(c,out,nt.midi,t0+nt.b*beat,nt.vel||.5,nt.len*beat,0)});
+      timers.push(setTimeout(()=>{if(playing&&sessionGain===out&&opts.onBeat)opts.onBeat(i)},Math.max(0,(t0-c.currentTime)*1000)));
     }
-    schedule(c.currentTime+.08);
+    let idx=0,nextT=c.currentTime+.1;
+    function tick(){
+      if(!playing||sessionGain!==out)return;
+      if(nextT<c.currentTime)nextT=c.currentTime+.05;
+      while(nextT<c.currentTime+.3){
+        if(idx>=chords.length){
+          if(opts.loop&&chords.length)idx=0;
+          else{
+            clearInterval(ticker);ticker=null;
+            timers.push(setTimeout(()=>{if(sessionGain!==out)return;playing=false;if(opts.onDone)opts.onDone()},Math.max(0,(nextT-c.currentTime)*1000)+400));
+            return;
+          }
+        }
+        scheduleBar(idx,nextT);idx++;nextT+=bar;
+      }
+    }
+    tick();
+    if(playing&&sessionGain===out)ticker=setInterval(tick,50);
   }
 
   /* ---- offline render -> WAV blob (for download) ---- */
