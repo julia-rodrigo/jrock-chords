@@ -120,7 +120,7 @@ function buildDrumPattern(style,n){
    beats, vel: 0-1 velocity}. */
 const KESSOKU_SONGS=[
  {n:"A Rolling Stone, Morning Falls on You",jp:"転がる岩、君に朝が降る",key:"D",
-  d:"Intro–Verse–Pre-chorus–Chorus. Intro: Imaj7, a borrowed ♭VIIm7 (shown as a custom chord), IVmaj7, a III7 secondary dominant, VIm9.",
+  d:"Intro–Verse–Pre-chorus–Chorus. Verse: I-VIm-IV-I / I-VIm-IV-V.",
   checked:"Key checked against the published chart (Kessoku Band cover: D). Verse chords not re-checked; other sections are invented.",
   sections:[["Intro",4],["Verse",8],["Pre-chorus",4],["Chorus",8]],
   p:[{d:5,v:0},{d:3,v:0},{d:0,v:0},{d:4,v:0},{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:0,v:0},{d:0,v:0},{d:5,v:0},{d:3,v:0},{d:4,v:0},{d:1,v:0},{d:3,v:0},{d:4,v:0},{d:4,v:0},{d:3,v:0},{d:4,v:0},{d:2,v:0},{d:5,v:0},{d:3,v:0},{d:4,v:0},{d:0,v:0},{d:0,v:0}],
@@ -213,7 +213,7 @@ const KESSOKU_SONGS=[
    [{b:0,m:16,len:2,vel:0.47},{b:2,m:12,len:2,vel:0.42}]
   ]},
  {n:"Seishun Complex",jp:"青春コンプレックス",key:"F",
-  d:"full structure (Intro–Verse–Pre-chorus–Chorus); the Intro (Imaj7, a borrowed ♭VIImaj7 shown as a custom chord, IVmaj7, a III7 secondary dominant, VIm9, IVmaj7) is the sourced excerpt, extended around it in the same key/chord vocabulary as an original arrangement, not a verbatim transcription of every section.",
+  d:"Intro–Verse–Pre-chorus–Chorus. Intro: Imaj7, a borrowed ♭VIIm7 (shown as a custom chord), IVmaj7, a III7 secondary dominant, VIm9.",
   checked:"Key (F) and intro chords checked against the published chart: Fmaj7 – E♭m7-type – B♭maj7 – A7 – Dm9. Sections after the intro are invented.",
   sections:[["Intro",6],["Verse",8],["Pre-chorus",4],["Chorus",8]],
   p:[{d:0,v:1},{custom:true,root:3,q:"m7"},{d:3,v:1},{d:2,v:2},{d:5,v:3},{d:3,v:1},{d:0,v:1},{d:5,v:1},{d:3,v:1},{d:1,v:1},{d:0,v:1},{d:5,v:1},{d:3,v:1},{d:4,v:1},{d:1,v:1},{d:3,v:1},{d:4,v:1},{d:4,v:1},{d:3,v:1},{d:4,v:1},{d:2,v:1},{d:5,v:3},{d:3,v:1},{d:4,v:1},{d:0,v:1},{d:0,v:1}],
