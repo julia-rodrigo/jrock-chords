@@ -372,6 +372,7 @@ function renderSongs(){
       <div class="t">${song.n}</div>
       <div class="jp">${song.jp} · key of ${song.key}</div>
       <div class="d">${song.d}</div>
+      ${song.checked?`<div class="chk">${song.checked}</div>`:""}
       ${song.sections?`<div class="sections">${song.sections.map(([name,len])=>`<span class="secTag">${name} <em>${len}</em></span>`).join("")}</div>`:""}
       <div class="row">
         <button data-i="${i}" data-act="play" class="${playingSongIdx===i?"on":""}">${playingSongIdx===i?"■ Stop":"▶ Play"}</button>

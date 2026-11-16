@@ -86,3 +86,4 @@ details.sect>summary{cursor:pointer;color:var(--muted);font-size:13px;text-trans
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .tabs button{font-size:13px;padding:7px 12px}
 .tabs button.on{background:var(--primary);border-color:var(--primaryLine);color:#1d1510}
+.chk{font-size:12px;color:var(--amber);margin:0 0 8px}
