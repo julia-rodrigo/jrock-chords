@@ -79,7 +79,6 @@ function renderDiagModeBtns(){document.querySelectorAll("#diagModeBtns button").
 
 /* ---------- progression ---------- */
 function renderProg(){
-  $("selHome").appendChild($("selCard"));
   const el=$("prog"),sz=diagramSizePx(st.diagramSize);
   if(!st.prog.length){el.innerHTML=`<div class="empty">Tap a chord on the wheel below to start.</div>`;return}
   let h="";
@@ -129,7 +128,7 @@ function renderWheel(){
 }
 
 function renderSel(){
-  const c=st.sel!=null?st.prog[st.sel]:null;$("selCard").style.display=c?"":"none";if(!c)return;
+  const c=st.sel!=null?st.prog[st.sel]:null;$("selCard").style.display=c?"":"none";syncSheetBack();if(!c)return;
   const root=chordRoot(c),sz=diagramSizePx(st.diagramSize),big=BIG_SIZE[st.diagramSize];
   if(c.custom){
     const q=qualByKey(c.q);
@@ -161,8 +160,6 @@ function renderSel(){
   const lk=lenKey(c);
   $("lens").innerHTML=LEN_OPTS.map(o=>`<button data-l="${o.k}" class="${o.k===lk?"on":""}">${o.l}</button>`).join("");
   $("replace").innerHTML=[0,1,2,3,4,5,6].map(d=>`<button data-d="${d}" class="${!c.custom&&c.d===d?"on":""}"><b style="color:${famCol(d)}">${roman(d)}</b> <span style="color:var(--muted)">${cn({d,v:0})}</span></button>`).join("");
-  const chip=document.querySelector(`#prog .chip[data-i="${st.sel}"]`);
-  if(chip)chip.after($("selCard"));
 }
 
 function renderCurve(){
@@ -255,7 +252,7 @@ $("prog").addEventListener("click",e=>{
   }
   if(e.target.closest(".grip"))return;
   const c=e.target.closest(".chip");if(!c)return;const i=+c.dataset.i;st.sel=st.sel===i?null:i;render();
-  if(st.sel!=null){previewChord(st.prog[i]);$("selCard").scrollIntoView({block:"nearest",behavior:"smooth"})}
+  if(st.sel!=null)previewChord(st.prog[i]);
 });
 $("moreVars").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;snap();
@@ -325,30 +322,60 @@ $("drumStyle").onchange=e=>{st.drumStyle=e.target.value;save()};
 $("instrument").onchange=e=>{st.instrument=e.target.value;save()};
 $("sizeBtns").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.diagramSize=b.dataset.s;render()});
 $("diagModeBtns").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.diagramMode=b.dataset.m;render()});
-$("copy").onclick=()=>{if(!st.prog.length)return;const t=`Key of ${st.key}: ${st.prog.map(chordBottom).join(" – ")}  (${st.prog.map(chordTop).join(" – ")})`;try{navigator.clipboard.writeText(t).then(()=>toast("Copied"),()=>toast(t))}catch(e){toast(t)}};
 function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove("show"),2200)}
-
 function downloadBlob(blob,filename){
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url)},200);
 }
-$("downloadChart").onclick=()=>{
-  if(!st.prog.length)return toast("Nothing to download yet");
-  const lines=[`J-Rock progression — key of ${st.key}, ${TIME_SIGS[st.timeSigIdx].label}, ${st.bpm} BPM`,
-    st.prog.map(c=>chordTop(c)+(c.len!=null?` (${lenLabel(c.len)})`:"")).join("  -  "),
-    st.prog.map(chordBottom).join("  -  "),""];
+
+/* ---------- pop-up sheets: chord editor + copy/download menus ---------- */
+function syncSheetBack(){
+  const open=$("selCard").style.display!=="none"||!$("menuSheet").hidden;
+  $("sheetBack").hidden=!open;document.body.classList.toggle("noScroll",open);
+}
+function openMenu(title,items){
+  $("menuTitle").textContent=title;
+  $("menuBody").innerHTML=items.map((it,i)=>`<button data-i="${i}"><b>${it.label}</b><small>${it.hint}</small></button>`).join("");
+  $("menuBody").onclick=e=>{const b=e.target.closest("button");if(!b)return;closeMenu();items[+b.dataset.i].run()};
+  $("menuSheet").hidden=false;syncSheetBack();
+}
+function closeMenu(){$("menuSheet").hidden=true;syncSheetBack()}
+$("menuClose").onclick=closeMenu;
+$("selClose").onclick=()=>{st.sel=null;render()};
+$("selHear").onclick=()=>{if(st.sel!=null)previewChord(st.prog[st.sel])};
+$("sheetBack").onclick=()=>{if(!$("menuSheet").hidden)closeMenu();else{st.sel=null;render()}};
+
+async function runExport(label,make,filename){
+  try{toast(label+"…");await saveFile(await make(),filename);if(!isNativeApp())toast("Downloaded "+filename)}
+  catch(e){toast("Couldn't save "+filename+": "+(e&&e.message||e))}
+}
+function chartText(){
+  const lines=[`J-Rock progression — ${progTitle()}`,
+    st.prog.map(c=>chordNameOf(c)+(c.len!=null?` (${lenLabel(c.len)})`:"")).join("  -  "),
+    st.prog.map(chordRomanOf).join("  -  "),""];
   for(let i=1;i<st.prog.length;i++){const m=moveBetween(st.prog[i-1],st.prog[i]);lines.push(`${chordTop(st.prog[i-1])} -> ${chordTop(st.prog[i])}: ${TYPES[m[0]].lbl} — ${m[1]}`)}
-  downloadBlob(new Blob([lines.join("\n")],{type:"text/plain"}),"jrock-progression.txt");
+  return lines.join("\n");
+}
+$("copy").onclick=()=>{
+  if(!st.prog.length)return toast("Nothing to copy yet");
+  openMenu("Copy",[
+    {label:"Chord names",hint:"Text, e.g. "+st.prog.slice(0,3).map(chordNameOf).join(" – ")+"…",run:async()=>{const t=progNamesText();toast(await copyText(t)?"Chord names copied":t)}},
+    {label:"Chord picture with diagrams",hint:`Image of every chord with its ${st.diagramMode==="piano"?"piano":"guitar"} diagram`,run:async()=>{
+      try{await navigator.clipboard.write([new ClipboardItem({"image/png":chordSheetPNG()})]);toast("Chord picture copied")}
+      catch(e){toast("Can't copy images here — saving it instead");runExport("Making picture",chordSheetPNG,"jrock-chords.png")}
+    }}
+  ]);
 };
-$("downloadAudio").onclick=async()=>{
+$("download").onclick=()=>{
   if(!st.prog.length)return toast("Nothing to download yet");
-  toast("Rendering audio…");
-  try{
-    const blob=await AudioEngine.renderToWavBlob(st.prog.map(toPlayable),playOpts({loop:false}));
-    downloadBlob(blob,"jrock-progression.wav");
-    toast("Downloaded");
-  }catch(e){toast("Couldn't render audio")}
+  openMenu(isNativeApp()?"Save or share":"Download",[
+    {label:"Chord sheet picture (.png)",hint:`Every chord with its ${st.diagramMode==="piano"?"piano":"guitar"} diagram`,run:()=>runExport("Making picture",chordSheetPNG,"jrock-chords.png")},
+    {label:"Sheet music (.musicxml)",hint:"Chord symbols over notated chords — opens in MuseScore, Flat, Finale, Sibelius",run:()=>runExport("Writing sheet music",async()=>buildMusicXML(),"jrock-progression.musicxml")},
+    {label:"MIDI (.mid)",hint:"Chords + bass, for GarageBand, FL Studio, any DAW",run:()=>runExport("Writing MIDI",async()=>buildMidi(),"jrock-progression.mid")},
+    {label:"Audio (.wav)",hint:"What you hear when you press Play",run:()=>runExport("Rendering audio",()=>AudioEngine.renderToWavBlob(st.prog.map(toPlayable),playOpts({loop:false})),"jrock-progression.wav")},
+    {label:"Text chart (.txt)",hint:"Chord names, numerals and why each move works",run:()=>runExport("Writing chart",async()=>new Blob([chartText()],{type:"text/plain"}),"jrock-progression.txt")}
+  ]);
 };
 
 /* ---------- chord explorer ---------- */

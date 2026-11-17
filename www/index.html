@@ -44,8 +44,7 @@
       </div>
     </div>
     <div class="row" style="margin-bottom:10px">
-      <button id="copy">Copy</button><button id="undo">Undo</button>
-      <button id="downloadChart">Download chart</button><button id="downloadAudio">Download audio</button>
+      <button id="copy">Copy…</button><button id="download">Download…</button><button id="undo">Undo</button>
       <button id="clear" class="danger">Clear</button>
     </div>
     <div class="prog" id="prog"></div>
@@ -53,7 +52,7 @@
   </div>
 
   <div id="selHome"><div class="card" id="selCard" style="display:none">
-    <h2 id="selTitle">Selected chord</h2>
+    <div class="row sheetHead"><h2 id="selTitle" style="margin:0;flex:1;min-width:0">Selected chord</h2><button id="selHear">▶ Hear</button><button id="selClose" class="ghost" aria-label="Close">✕</button></div>
     <div class="bigDiagram" id="bigDiagram"></div>
     <div class="sub" id="varsLbl" style="margin:0">Voicing (tap to see how it's fretted)</div>
     <div class="vars" id="vars"></div>
@@ -152,11 +151,17 @@
   </div>
 
 </div>
+<div class="sheetBack" id="sheetBack" hidden></div>
+<div class="card sheet" id="menuSheet" hidden>
+  <div class="row sheetHead"><h2 id="menuTitle" style="margin:0;flex:1"></h2><button id="menuClose" class="ghost" aria-label="Close">✕</button></div>
+  <div class="menuList" id="menuBody"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="data.js"></script>
 <script src="chords.js"></script>
 <script src="audio.js"></script>
+<script src="export.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
