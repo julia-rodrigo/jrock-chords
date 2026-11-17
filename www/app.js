@@ -360,12 +360,7 @@ $("savedList").addEventListener("click",e=>{
 function songChordRoot(song,c){return c.custom?((c.root%12)+12)%12:(KEYPC[song.key]+DEG[c.d].off)%12}
 function songChordIv(c){return c.custom?qualByKey(c.q).iv:VARS[c.d][c.v].iv}
 function songToPlayable(song,c){return{iv:songChordIv(c),root:songChordRoot(song,c)}}
-function songMelodyAbs(song){
-  if(!song.melody)return null;
-  const base=72+KEYPC[song.key]; // lead register, clearly above the ~C4-D5 chord voicing
-  return song.melody.map(bar=>bar.map(nt=>({b:nt.b,midi:base+nt.m,len:nt.len,vel:nt.vel})));
-}
-let melodyOn=true,playingSongIdx=-1;
+let playingSongIdx=-1;
 function renderSongs(){
   $("songsList").innerHTML=KESSOKU_SONGS.map((song,i)=>`
     <div class="songCard">
@@ -387,9 +382,8 @@ $("songsList").addEventListener("click",e=>{
     if(playingSongIdx===i){AudioEngine.stop();playingSongIdx=-1;renderSongs();return}
     stopPlay();
     const chords=song.p.map(c=>songToPlayable(song,c));
-    const melody=melodyOn?songMelodyAbs(song):null;
     playingSongIdx=i;renderSongs();
-    AudioEngine.playProgression(chords,{bpm:st.bpm,timeSigBeats:4,drumStyle:st.drumStyle,instrument:st.instrument,loop:false,melody,
+    AudioEngine.playProgression(chords,{bpm:st.bpm,timeSigBeats:4,drumStyle:st.drumStyle,instrument:st.instrument,loop:false,
       onDone:()=>{playingSongIdx=-1;renderSongs()}});
     return;
   }
@@ -397,7 +391,6 @@ $("songsList").addEventListener("click",e=>{
   st.key=song.key;st.prog=song.p.map(c=>c.custom?{...c}:{d:c.d,v:c.v});st.sel=null;
   renderKey();render();toast(`Loaded "${song.n}"`);
 });
-$("melodyToggle").onclick=e=>{melodyOn=!melodyOn;e.currentTarget.classList.toggle("on",melodyOn);e.currentTarget.textContent=melodyOn?"🎵 Melody: on":"🎵 Melody: off"};
 
 /* ---------- mic: listen & detect ---------- */
 let micOn=false,micMode="chord";
