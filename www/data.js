@@ -85,14 +85,6 @@ const TIME_SIGS=[
 const DRUM_STYLES=["none","pop","rock","ballad"];
 const INSTRUMENTS=[{k:"guitar",label:"Guitar"},{k:"piano",label:"Piano"},{k:"pad",label:"Synth pad"}];
 
-function buildStrumPattern(n){
-  const pat=[];
-  for(let b=0;b<n;b++){
-    pat.push([b,0,b===0?.55:.4]);
-    pat.push([b+.5,1,.26]);
-  }
-  return pat;
-}
 function buildDrumPattern(style,n){
   if(style==="none")return{kick:[],snare:[],hihat:[]};
   const half=n>=2?Math.floor(n/2):0;

@@ -45,7 +45,11 @@ function chordTop(c){return c.custom?(noteName(c.root)+qualByKey(c.q).suf):rn(c)
 function chordBottom(c){return c.custom?"custom":cn(c)}
 function chordTension(c){return c.custom?2:(DEG[c.d].base+VARS[c.d][c.v].t)}
 function chordFamName(c){return c.custom?"custom, non-diatonic":FAMNAME[fam(c.d)]}
-function toPlayable(c){return{iv:chordIv(c),root:chordRoot(c)}}
+function toPlayable(c){return{iv:chordIv(c),root:chordRoot(c),len:c.len}}
+function barBeats(){return TIME_SIGS[st.timeSigIdx].beats}
+function lenLabel(l){return l===.5?"½ beat":l===1?"1 beat":l===2*barBeats()?"2 bars":`${l} beats`}
+const LEN_OPTS=[{k:".5",l:"½ beat"},{k:"1",l:"1 beat"},{k:"2",l:"2 beats"},{k:"3",l:"3 beats"},{k:"bar",l:"1 bar"},{k:"2bar",l:"2 bars"}];
+function lenKey(c){const n=barBeats();if(c.len==null||c.len===n)return"bar";if(c.len===2*n)return"2bar";return String(c.len===.5?".5":c.len)}
 
 function move(a,b){
   if(a===b)return["hold","Repeating holds the moment and lets the melody move — like the double VIm at the end of the Royal Road."];
@@ -84,7 +88,7 @@ function renderProg(){
     const diagram=chordOrPianoSVG(st.diagramMode,chordRoot(c),chordShapeKey(c),chordIv(c),chordFamHexOf(c),sz.w,sz.h);
     h+=`<div class="chip ${chordFamCls(c)} ${st.sel===i?"sel":""}" data-i="${i}">`+
        `<span class="grip" data-i="${i}" title="Drag to move">⠿</span><div class="chipBtns"><button class="chipBtn" data-act="play" data-i="${i}" title="Replay this chord">▶</button><button class="chipBtn" data-act="del" data-i="${i}" title="Remove this chord">✕</button></div>`+
-       `<div class="rn">${chordTop(c)}</div><div class="cn">${chordBottom(c)}</div><div class="diagram">${diagram}</div></div>`;
+       `<div class="rn">${chordTop(c)}</div><div class="cn">${chordBottom(c)}</div>${c.len!=null?`<div class="lenTag">${lenLabel(c.len)}</div>`:""}<div class="diagram">${diagram}</div></div>`;
   });
   el.innerHTML=h;
 }
@@ -154,6 +158,8 @@ function renderSel(){
     $("moreWrap").style.display=extra.length?"":"none";
     $("moreVars").innerHTML=extra.map(q=>`<button data-q="${q.k}"><div class="diagram">${chordOrPianoSVG(st.diagramMode,root,q.k,q.iv,"#c9a383",sz.w,sz.h)}</div><div>${noteName(root)}${q.suf||"maj"}</div><span style="color:var(--muted);font-size:12px">${q.name}</span></button>`).join("");
   }
+  const lk=lenKey(c);
+  $("lens").innerHTML=LEN_OPTS.map(o=>`<button data-l="${o.k}" class="${o.k===lk?"on":""}">${o.l}</button>`).join("");
   $("replace").innerHTML=[0,1,2,3,4,5,6].map(d=>`<button data-d="${d}" class="${!c.custom&&c.d===d?"on":""}"><b style="color:${famCol(d)}">${roman(d)}</b> <span style="color:var(--muted)">${cn({d,v:0})}</span></button>`).join("");
   const chip=document.querySelector(`#prog .chip[data-i="${st.sel}"]`);
   if(chip)chip.after($("selCard"));
@@ -204,7 +210,7 @@ function renderAnalysis(){
 
 function render(){
   renderProg();renderWheel();renderSel();renderCurve();renderAnalysis();renderSizeBtns();renderDiagModeBtns();
-  renderExplorer();save();
+  renderExplorer();renderSongs();save();
 }
 
 function addChord(d){
@@ -253,12 +259,20 @@ $("prog").addEventListener("click",e=>{
 });
 $("moreVars").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;snap();
-  st.prog[st.sel]={custom:true,root:chordRoot(st.prog[st.sel]),q:b.dataset.q};
+  const old=st.prog[st.sel];
+  st.prog[st.sel]={custom:true,root:chordRoot(old),q:b.dataset.q};if(old.len!=null)st.prog[st.sel].len=old.len;
   render();previewChord(st.prog[st.sel]);
+});
+$("lens").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;snap();
+  const c=st.prog[st.sel],n=barBeats(),k=b.dataset.l;
+  if(k==="bar")delete c.len;else{c.len=k==="2bar"?2*n:+k;if(c.len===n)delete c.len}
+  render();previewChord(c);
 });
 $("replace").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;snap();
-  st.prog[st.sel]={d:+b.dataset.d,v:0};render();previewChord(st.prog[st.sel]);
+  const old=st.prog[st.sel];
+  st.prog[st.sel]={d:+b.dataset.d,v:0};if(old.len!=null)st.prog[st.sel].len=old.len;render();previewChord(st.prog[st.sel]);
 });
 /* drag a chord's grip onto another chord to move it there */
 let drag=null;
@@ -322,7 +336,7 @@ function downloadBlob(blob,filename){
 $("downloadChart").onclick=()=>{
   if(!st.prog.length)return toast("Nothing to download yet");
   const lines=[`J-Rock progression — key of ${st.key}, ${TIME_SIGS[st.timeSigIdx].label}, ${st.bpm} BPM`,
-    st.prog.map(chordTop).join("  -  "),
+    st.prog.map(c=>chordTop(c)+(c.len!=null?` (${lenLabel(c.len)})`:"")).join("  -  "),
     st.prog.map(chordBottom).join("  -  "),""];
   for(let i=1;i<st.prog.length;i++){const m=moveBetween(st.prog[i-1],st.prog[i]);lines.push(`${chordTop(st.prog[i-1])} -> ${chordTop(st.prog[i])}: ${TYPES[m[0]].lbl} — ${m[1]}`)}
   downloadBlob(new Blob([lines.join("\n")],{type:"text/plain"}),"jrock-progression.txt");
@@ -416,6 +430,9 @@ function renderSongs(){
       <div class="jp">${song.jp} · key of ${song.key}</div>
       <div class="d">${song.d}</div>
       ${song.checked?`<div class="chk">${song.checked}</div>`:""}
+      <div class="sub" style="margin:0 0 4px">Tap a chord to hear it and add it to your progression (in your key, ${st.key}):</div>
+      <div class="songChords">${song.p.map((c,j)=>`<button data-i="${i}" data-act="add" data-j="${j}" class="${c.custom?"fX":"f"+fam(c.d)}"><b>${c.custom?"":rn(c)}</b> ${songChordName(song,c)}</button>`).join("")}</div>
+      ${songNextIdeas(song,i)}
       ${song.sections?`<div class="sections">${song.sections.map(([name,len])=>`<span class="secTag">${name} <em>${len}</em></span>`).join("")}</div>`:""}
       <div class="row">
         <button data-i="${i}" data-act="play" class="${playingSongIdx===i?"on":""}">${playingSongIdx===i?"■ Stop":"▶ Play"}</button>
@@ -423,9 +440,33 @@ function renderSongs(){
       </div>
     </div>`).join("");
 }
+function songChordName(song,c){
+  const pc=songChordRoot(song,c),names=["F","B♭","E♭"].includes(song.key)?FL:SH;
+  return names[pc]+(c.custom?qualByKey(c.q).suf:VARS[c.d][c.v].cn);
+}
+function songNextIdeas(song,i){
+  const last=[...song.p].reverse().find(c=>!c.custom);if(!last)return"";
+  const ideas=[0,1,2,3,4,5,6].filter(b=>b!==last.d).map(b=>({b,m:move(last.d,b)}))
+    .filter(x=>x.m[0]!=="avoid").sort((x,y)=>TYPES[x.m[0]].rank-TYPES[y.m[0]].rank).slice(0,3);
+  return `<div class="sub" style="margin:8px 0 4px">Ideas for what could come after ${rn(last)} — music-theory suggestions, not part of the song:</div>
+    <div class="songChords">${ideas.map(({b,m})=>`<button data-i="${i}" data-act="idea" data-d="${b}" class="f${fam(b)}" title="${m[1].replace(/"/g,"&quot;")}"><b>${roman(b)}</b> <span class="mv" style="color:${TYPES[m[0]].c};border-color:${TYPES[m[0]].c}">${TYPES[m[0]].lbl}</span></button>`).join("")}</div>`;
+}
+function appendChord(c){
+  snap();
+  if(st.sel!=null){st.prog.splice(st.sel+1,0,c);st.sel++}else st.prog.push(c);
+  if(st.prog.length>32){st.prog.shift();if(st.sel!=null)st.sel--}
+  render();previewChord(c);
+}
 $("songsList").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;
   const i=+b.dataset.i,song=KESSOKU_SONGS[i];
+  if(b.dataset.act==="add"){
+    const c=song.p[+b.dataset.j];
+    const nc=c.custom?{custom:true,root:((c.root-KEYPC[song.key]+KEYPC[st.key])%12+12)%12,q:c.q}:{d:c.d,v:c.v};
+    appendChord(nc);toast(`Added ${chordTop(nc)} (${chordBottom(nc)==="custom"?"custom":chordBottom(nc)}) in ${st.key}`);
+    return;
+  }
+  if(b.dataset.act==="idea"){const nc={d:+b.dataset.d,v:0};appendChord(nc);toast(`Added ${rn(nc)} (${cn(nc)})`);return}
   if(b.dataset.act==="play"){
     if(playingSongIdx===i){AudioEngine.stop();playingSongIdx=-1;renderSongs();return}
     stopPlay();

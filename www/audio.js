@@ -150,41 +150,48 @@ const AudioEngine=(()=>{
     }catch(e){emitState("error: "+e.message)}
   }
 
-  // Bars are scheduled just in time (a short lookahead) instead of all at once: queuing a whole
-  // song up front creates thousands of live audio nodes, which overloads a phone's audio thread
-  // and makes playback drop to silence.
+  // One chord lasting L beats (default: one bar), starting at beat B0 of the loop. Strums follow
+  // the chord; drums follow the bar grid, so a chord can start or end mid-bar.
+  function scheduleChord(c,out,ch,t0,L,B0,beat,n,drums,instrument){
+    const notes=voicingNotes(ch.iv,ch.root),eps=1e-6;
+    for(let b=0;b<L-eps;b+=.5){
+      const down=Math.abs(b%1)<eps;
+      strum(c,out,notes,t0+b*beat,!down,down?(b===0?.55:.4):.26,Math.min(beat*1.1,(L-b)*beat+.05),instrument);
+    }
+    for(let b=0;b<L-eps;b+=2)bassNote(c,out,notes[0]-12,t0+b*beat,beat*Math.min(2,L-b));
+    const m0=Math.floor(B0/n+eps),m1=Math.floor((B0+L)/n-eps);
+    for(let m=m0;m<=m1;m++)["kick","snare","hihat"].forEach(type=>drums[type].forEach(h=>{
+      const g=m*n+h;if(g>=B0-eps&&g<B0+L-eps)drumHit(c,out,type,t0+(g-B0)*beat);
+    }));
+  }
+
+  // Chords are scheduled just in time (a short lookahead) instead of all at once: queuing a whole
+  // song up front creates thousands of live audio nodes, which overloads a phone's audio thread.
   function playProgression(chords,opts){
     stop();
     const c=ctx(),master=getMaster();
     const out=c.createGain();out.gain.value=1;out.connect(master);
     sessionGain=out;
     playing=true;playHandlers=opts;
-    const beat=60/opts.bpm,n=opts.timeSigBeats||4,bar=beat*n;
-    const strumPat=buildStrumPattern(n),drums=buildDrumPattern(opts.drumStyle||"none",n);
-    function scheduleBar(i,t0){
-      const ch=chords[i],notes=voicingNotes(ch.iv,ch.root);
-      strumPat.forEach(([b,up,v])=>{if(b<n)strum(c,out,notes,t0+b*beat,!!up,v,beat*1.1,opts.instrument)});
-      bassNote(c,out,notes[0]-12,t0,beat*Math.min(2,n));
-      if(n>2)bassNote(c,out,notes[0]-12,t0+Math.floor(n/2)*beat,beat*Math.min(2,n));
-      drums.kick.forEach(b=>drumHit(c,out,"kick",t0+b*beat));
-      drums.snare.forEach(b=>drumHit(c,out,"snare",t0+b*beat));
-      drums.hihat.forEach(b=>drumHit(c,out,"hihat",t0+b*beat));
-      timers.push(setTimeout(()=>{if(playing&&sessionGain===out&&opts.onBeat)opts.onBeat(i)},Math.max(0,(t0-c.currentTime)*1000)));
-    }
-    let idx=0,nextT=c.currentTime+.1;
+    const beat=60/opts.bpm,n=opts.timeSigBeats||4;
+    const drums=buildDrumPattern(opts.drumStyle||"none",n);
+    let idx=0,B=0,nextT=c.currentTime+.1;
     function tick(){
       if(!playing||sessionGain!==out)return;
       if(nextT<c.currentTime)nextT=c.currentTime+.05;
       while(nextT<c.currentTime+.3){
         if(idx>=chords.length){
-          if(opts.loop&&chords.length)idx=0;
+          if(opts.loop&&chords.length){idx=0;B=0}
           else{
             clearInterval(ticker);ticker=null;
             timers.push(setTimeout(()=>{if(sessionGain!==out)return;playing=false;if(opts.onDone)opts.onDone()},Math.max(0,(nextT-c.currentTime)*1000)+400));
             return;
           }
         }
-        scheduleBar(idx,nextT);idx++;nextT+=bar;
+        const i=idx,L=chords[i].len||n,t0=nextT;
+        scheduleChord(c,out,chords[i],t0,L,B,beat,n,drums,opts.instrument);
+        timers.push(setTimeout(()=>{if(playing&&sessionGain===out&&opts.onBeat)opts.onBeat(i)},Math.max(0,(t0-c.currentTime)*1000)));
+        idx++;B+=L;nextT+=L*beat;
       }
     }
     tick();
@@ -193,19 +200,12 @@ const AudioEngine=(()=>{
 
   /* ---- offline render -> WAV blob (for download) ---- */
   async function renderToWavBlob(chords,opts){
-    const beat=60/opts.bpm,n=opts.timeSigBeats||4,bar=beat*n,total=Math.max(1,chords.length)*bar+1.5;
+    const beat=60/opts.bpm,n=opts.timeSigBeats||4;
+    const beats=chords.reduce((s,ch)=>s+(ch.len||n),0)||n,total=beats*beat+1.5;
     const sr=44100,oc=new OfflineAudioContext(2,Math.ceil(total*sr),sr);
-    const b=buildMaster(oc,oc.destination);
-    const strumPat=buildStrumPattern(n),drums=buildDrumPattern(opts.drumStyle||"none",n);
-    chords.forEach((ch,i)=>{
-      const t0=i*bar,notes=voicingNotes(ch.iv,ch.root);
-      strumPat.forEach(([beatOff,up,v])=>{if(beatOff<n)strum(oc,b.m,notes,t0+beatOff*beat,!!up,v,beat*1.1,opts.instrument)});
-      bassNote(oc,b.m,notes[0]-12,t0,beat*Math.min(2,n));
-      if(n>2)bassNote(oc,b.m,notes[0]-12,t0+Math.floor(n/2)*beat,beat*Math.min(2,n));
-      drums.kick.forEach(beatOff=>drumHit(oc,b.m,"kick",t0+beatOff*beat));
-      drums.snare.forEach(beatOff=>drumHit(oc,b.m,"snare",t0+beatOff*beat));
-      drums.hihat.forEach(beatOff=>drumHit(oc,b.m,"hihat",t0+beatOff*beat));
-    });
+    const b=buildMaster(oc,oc.destination),drums=buildDrumPattern(opts.drumStyle||"none",n);
+    let B=0;
+    chords.forEach(ch=>{const L=ch.len||n;scheduleChord(oc,b.m,ch,B*beat,L,B,beat,n,drums,opts.instrument);B+=L});
     const rendered=await oc.startRendering();
     return encodeWav(rendered);
   }

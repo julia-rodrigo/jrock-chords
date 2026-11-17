@@ -93,3 +93,7 @@ details.sect>summary{cursor:pointer;color:var(--muted);font-size:13px;text-trans
 .chip.dropTarget{box-shadow:0 0 0 3px var(--primaryLine)}
 .replace{display:flex;flex-wrap:wrap;gap:6px}
 .replace button{padding:6px 10px;font-size:13px}
+.lenTag{font-size:10px;color:var(--amber);margin-top:1px}
+.songChords{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.songChords button{padding:5px 9px;font-size:13px;border-width:1.5px;background:var(--card)}
+.songChords button b{margin-right:2px}
