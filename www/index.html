@@ -52,17 +52,23 @@
     <div style="margin-top:10px"><div class="sub" style="margin:0 0 6px">Presets from the cheat sheet</div><div class="presets" id="presets"></div></div>
   </div>
 
-  <div class="card" id="selCard" style="display:none">
+  <div id="selHome"><div class="card" id="selCard" style="display:none">
     <h2 id="selTitle">Selected chord</h2>
     <div class="bigDiagram" id="bigDiagram"></div>
     <div class="sub" id="varsLbl" style="margin:0">Voicing (tap to see how it's fretted)</div>
     <div class="vars" id="vars"></div>
+    <div id="moreWrap">
+      <div class="sub" style="margin:0 0 6px">More flavours (outside the key — becomes a custom chord)</div>
+      <div class="vars" id="moreVars"></div>
+    </div>
     <div id="swapsWrap">
       <div class="sub" style="margin:0 0 6px">Swap within its family (same job, new colour)</div>
       <div id="swaps"></div>
     </div>
+    <div class="sub" style="margin:8px 0 6px">Replace with another chord in the key</div>
+    <div class="replace" id="replace"></div>
     <div class="row" style="margin-top:8px"><button id="mvL">◀ Move</button><button id="mvR">Move ▶</button><button id="del">Remove</button><button id="desel">Done</button></div>
-  </div>
+  </div></div>
 
   <div class="card">
     <h2>Flow wheel</h2>

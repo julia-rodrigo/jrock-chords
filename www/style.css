@@ -87,3 +87,9 @@ details.sect>summary{cursor:pointer;color:var(--muted);font-size:13px;text-trans
 .tabs button{font-size:13px;padding:7px 12px}
 .tabs button.on{background:var(--primary);border-color:var(--primaryLine);color:#1d1510}
 .chk{font-size:12px;color:var(--amber);margin:0 0 8px}
+.prog #selCard{flex:1 1 100%;margin:2px 0 8px;background:var(--card2);border-color:var(--primaryLine)}
+.grip{position:absolute;top:-8px;left:-6px;width:22px;height:22px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:12px;line-height:20px;text-align:center;cursor:grab;touch-action:none;user-select:none;z-index:2}
+.chip.dragging{opacity:.45}
+.chip.dropTarget{box-shadow:0 0 0 3px var(--primaryLine)}
+.replace{display:flex;flex-wrap:wrap;gap:6px}
+.replace button{padding:6px 10px;font-size:13px}

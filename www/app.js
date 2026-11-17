@@ -75,6 +75,7 @@ function renderDiagModeBtns(){document.querySelectorAll("#diagModeBtns button").
 
 /* ---------- progression ---------- */
 function renderProg(){
+  $("selHome").appendChild($("selCard"));
   const el=$("prog"),sz=diagramSizePx(st.diagramSize);
   if(!st.prog.length){el.innerHTML=`<div class="empty">Tap a chord on the wheel below to start.</div>`;return}
   let h="";
@@ -82,7 +83,7 @@ function renderProg(){
     if(i>0){const t=TYPES[moveBetween(st.prog[i-1],c)[0]];h+=`<span class="mv" style="color:${t.c};border-color:${t.c}">${t.lbl}</span>`}
     const diagram=chordOrPianoSVG(st.diagramMode,chordRoot(c),chordShapeKey(c),chordIv(c),chordFamHexOf(c),sz.w,sz.h);
     h+=`<div class="chip ${chordFamCls(c)} ${st.sel===i?"sel":""}" data-i="${i}">`+
-       `<div class="chipBtns"><button class="chipBtn" data-act="play" data-i="${i}" title="Replay this chord">▶</button><button class="chipBtn" data-act="del" data-i="${i}" title="Remove this chord">✕</button></div>`+
+       `<span class="grip" data-i="${i}" title="Drag to move">⠿</span><div class="chipBtns"><button class="chipBtn" data-act="play" data-i="${i}" title="Replay this chord">▶</button><button class="chipBtn" data-act="del" data-i="${i}" title="Remove this chord">✕</button></div>`+
        `<div class="rn">${chordTop(c)}</div><div class="cn">${chordBottom(c)}</div><div class="diagram">${diagram}</div></div>`;
   });
   el.innerHTML=h;
@@ -136,6 +137,7 @@ function renderSel(){
       return `<button data-q="${qq.k}" class="${qq.k===c.q?"on":""}"><div class="diagram">${d}</div><div>${noteName(root)}${qq.suf||"maj"}</div></button>`;
     }).join("");
     $("swapsWrap").style.display="none";
+    $("moreWrap").style.display="none";
   }else{
     const curV=VARS[c.d][c.v];
     $("selTitle").textContent=`Selected: ${rn(c)} · ${cn(c)} (${FAMNAME[fam(c.d)]})`;
@@ -148,7 +150,13 @@ function renderSel(){
     $("swapsWrap").style.display="";
     const others=FAMS[fam(c.d)].filter(x=>x!==c.d);
     $("swaps").innerHTML=others.map(o=>`<button class="swap" data-s="${o}"><b style="color:${famCol(o)}">${rn(c)} → ${roman(o)}</b> <span style="color:var(--muted)">(${cn({d:o,v:0})})</span><small>${SWAPT[c.d+">"+o]||""}</small></button>`).join("");
+    const extra=QUALS.filter(q=>!VARS[c.d].some(v=>v.cn===q.k));
+    $("moreWrap").style.display=extra.length?"":"none";
+    $("moreVars").innerHTML=extra.map(q=>`<button data-q="${q.k}"><div class="diagram">${chordOrPianoSVG(st.diagramMode,root,q.k,q.iv,"#c9a383",sz.w,sz.h)}</div><div>${noteName(root)}${q.suf||"maj"}</div><span style="color:var(--muted);font-size:12px">${q.name}</span></button>`).join("");
   }
+  $("replace").innerHTML=[0,1,2,3,4,5,6].map(d=>`<button data-d="${d}" class="${!c.custom&&c.d===d?"on":""}"><b style="color:${famCol(d)}">${roman(d)}</b> <span style="color:var(--muted)">${cn({d,v:0})}</span></button>`).join("");
+  const chip=document.querySelector(`#prog .chip[data-i="${st.sel}"]`);
+  if(chip)chip.after($("selCard"));
 }
 
 function renderCurve(){
@@ -239,8 +247,48 @@ $("prog").addEventListener("click",e=>{
     else{snap();st.prog.splice(i,1);if(st.sel===i)st.sel=null;else if(st.sel>i)st.sel--;render()}
     return;
   }
-  const c=e.target.closest(".chip");if(!c)return;const i=+c.dataset.i;st.sel=st.sel===i?null:i;render();if(st.sel!=null)previewChord(st.prog[i]);
+  if(e.target.closest(".grip"))return;
+  const c=e.target.closest(".chip");if(!c)return;const i=+c.dataset.i;st.sel=st.sel===i?null:i;render();
+  if(st.sel!=null){previewChord(st.prog[i]);$("selCard").scrollIntoView({block:"nearest",behavior:"smooth"})}
 });
+$("moreVars").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;snap();
+  st.prog[st.sel]={custom:true,root:chordRoot(st.prog[st.sel]),q:b.dataset.q};
+  render();previewChord(st.prog[st.sel]);
+});
+$("replace").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;snap();
+  st.prog[st.sel]={d:+b.dataset.d,v:0};render();previewChord(st.prog[st.sel]);
+});
+/* drag a chord's grip onto another chord to move it there */
+let drag=null;
+function clearDrop(){document.querySelectorAll("#prog .dropTarget").forEach(x=>x.classList.remove("dropTarget"))}
+$("prog").addEventListener("pointerdown",e=>{
+  const g=e.target.closest(".grip");if(!g)return;
+  e.preventDefault();
+  const from=+g.dataset.i;
+  drag={from,to:from,el:g.closest(".chip")};
+  drag.el.classList.add("dragging");
+  try{g.setPointerCapture(e.pointerId)}catch(err){}
+});
+$("prog").addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const t=document.elementFromPoint(e.clientX,e.clientY),ch=t&&t.closest?t.closest("#prog .chip"):null;
+  clearDrop();
+  if(ch&&+ch.dataset.i!==drag.from){ch.classList.add("dropTarget");drag.to=+ch.dataset.i}else drag.to=drag.from;
+});
+function endDrag(){
+  if(!drag)return;
+  const{from,to,el}=drag;drag=null;el.classList.remove("dragging");clearDrop();
+  if(to===from)return;
+  snap();
+  const[x]=st.prog.splice(from,1);st.prog.splice(to,0,x);
+  if(st.sel===from)st.sel=to;
+  else if(st.sel!=null){if(from<st.sel&&to>=st.sel)st.sel--;else if(from>st.sel&&to<=st.sel)st.sel++}
+  render();
+}
+$("prog").addEventListener("pointerup",endDrag);
+$("prog").addEventListener("pointercancel",endDrag);
 $("vars").addEventListener("click",e=>{
   const b=e.target.closest("button");if(!b)return;snap();
   const c=st.prog[st.sel];
